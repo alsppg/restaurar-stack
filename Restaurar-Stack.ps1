@@ -337,7 +337,10 @@ function Show-JanelaSelecao {
             }
             $cb.Text     = $rotulo
             $cb.AutoSize = $true
-            $cb.Checked  = if ($a.PSObject.Properties.Name -contains 'marcar') { [bool]$a.marcar } else { [bool]$a.padrao }
+            # PowerShell 5.1 nao aceita atribuir um "if" direto a uma propriedade.
+            $marcado = [bool]$a.padrao
+            if ($a.PSObject.Properties.Name -contains 'marcar') { $marcado = [bool]$a.marcar }
+            $cb.Checked  = $marcado
             $cb.Location = New-Object Drawing.Point(20, $y)
             $cb.Tag      = $a
             $painel.Controls.Add($cb)
