@@ -20,6 +20,12 @@ $d="$env:USERPROFILE\restaurar-stack"; if(-not(Get-Command git -ErrorAction Sile
 d=~/restaurar-stack; if [ -d "$d/.git" ]; then git -C "$d" pull -q; else git clone -q https://github.com/alsppg/restaurar-stack.git "$d"; fi; bash "$d/restaurar-stack.sh"
 ```
 
+Em Mac recem-formatado, `git` e `python3` vem das Command Line Tools da Apple.
+Se faltarem, o script abre o instalador da Apple e pede para voce rodar o
+comando de novo depois. O Homebrew tambem nao vem de fabrica: o script
+pergunta se quer instalar (script oficial de brew.sh, pede sua senha). Se voce
+recusar, os apps do ArtCraft instalam normalmente e os demais sao pulados.
+
 Como o repositorio e privado, o `git clone` pede autenticacao na primeira vez
 em cada maquina. Tornando o repositorio publico em Settings > Danger Zone >
 Change repository visibility, o comando passa a rodar sem nenhuma interacao.

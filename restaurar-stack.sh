@@ -37,7 +37,12 @@ log() {
 
 morrer() { log "$1" ERRO; exit 1; }
 
-command -v python3 >/dev/null 2>&1 || morrer "python3 nao encontrado (vem com as Command Line Tools: xcode-select --install)"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "As Command Line Tools da Apple nao estao instaladas (e de onde vem git e python3)."
+  echo "Abrindo o instalador da Apple agora. Conclua a janela e rode este comando de novo."
+  xcode-select --install >/dev/null 2>&1 || true
+  exit 1
+fi
 [[ -f "$CATALOGO" ]] || morrer "catalogo nao encontrado: $CATALOGO"
 
 # --------------------------------------------------------- leitura do catalogo
@@ -202,13 +207,35 @@ instalar_brew() {
 
 # ------------------------------------------------------------------ Homebrew
 PRECISA_BREW=0
+QTD_BREW=0
 for l in "${SELECIONADOS[@]}"; do
-  [[ "$(campo "$l" 3)" == "gerenciador" ]] && PRECISA_BREW=1
+  if [[ "$(campo "$l" 3)" == "gerenciador" ]]; then
+    PRECISA_BREW=1
+    QTD_BREW=$((QTD_BREW+1))
+  fi
 done
 TEM_BREW=0
 command -v brew >/dev/null 2>&1 && TEM_BREW=1
 if (( PRECISA_BREW )) && (( ! TEM_BREW )); then
-  log 'Homebrew nao encontrado. Instale por https://brew.sh e rode de novo; os apps do ArtCraft seguem normalmente.' AVISO
+  echo
+  echo "O Homebrew nao esta instalado. Ele e necessario para $QTD_BREW dos apps"
+  echo "selecionados. Os apps do ArtCraft nao dependem dele."
+  echo "A instalacao usa o script oficial de https://brew.sh e vai pedir sua senha."
+  printf 'Instalar o Homebrew agora? [s/N] '
+  read -r resposta < /dev/tty || resposta=""
+  case "$resposta" in
+    [sS]|[sS][iI][mM])
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/brew/HEAD/install.sh)" || true
+      # O brew nasce fora do PATH da sessao atual; nos dois caminhos possiveis.
+      for shellenv in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        [[ -x "$shellenv" ]] && eval "$("$shellenv" shellenv)" && break
+      done
+      command -v brew >/dev/null 2>&1 && TEM_BREW=1
+      ;;
+    *)
+      log 'Homebrew recusado. Esses apps serao pulados; os do ArtCraft seguem normalmente.' AVISO
+      ;;
+  esac
 fi
 
 # ------------------------------------------------------------------ instalacao
