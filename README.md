@@ -2,6 +2,28 @@
 
 Reinstala a stack de programas depois de formatar/restaurar a maquina.
 
+## Comando unico
+
+### Windows
+
+Abra o PowerShell e cole isto. Instala o Git se faltar, clona ou atualiza o
+repositorio e abre a tela de selecao. Serve tanto na primeira vez quanto nas
+seguintes.
+
+```powershell
+$d="$env:USERPROFILE\restaurar-stack"; if(-not(Get-Command git -ErrorAction SilentlyContinue)){winget install --id Git.Git -e --silent --accept-package-agreements --accept-source-agreements; $env:Path+=";$env:ProgramFiles\Git\cmd"}; if(Test-Path "$d\.git"){git -C $d pull -q}else{git clone -q https://github.com/alsppg/restaurar-stack.git $d}; powershell -NoProfile -ExecutionPolicy Bypass -File "$d\Restaurar-Stack.ps1"
+```
+
+### macOS
+
+```bash
+d=~/restaurar-stack; if [ -d "$d/.git" ]; then git -C "$d" pull -q; else git clone -q https://github.com/alsppg/restaurar-stack.git "$d"; fi; bash "$d/restaurar-stack.sh"
+```
+
+Como o repositorio e privado, o `git clone` pede autenticacao na primeira vez
+em cada maquina. Tornando o repositorio publico em Settings > Danger Zone >
+Change repository visibility, o comando passa a rodar sem nenhuma interacao.
+
 ## Windows
 
 Arquivos: `Restaurar-Stack.cmd`, `Restaurar-Stack.ps1`, `catalog.json` — os tres
