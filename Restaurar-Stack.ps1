@@ -96,7 +96,11 @@ if ($VerificarIds) {
     foreach ($a in $alvos) {
         $n++
         Write-Progress -Activity 'Conferindo ids do winget' -Status $a.nome -PercentComplete ([int](100 * $n / $alvos.Count))
-        & winget show --id $a.winget --exact --disable-interactivity 1>$null 2>$null
+        $argsShow = @('show', '--id', $a.winget, '--exact', '--disable-interactivity')
+        if ($a.PSObject.Properties.Name -contains 'origem' -and $a.origem) {
+            $argsShow += @('--source', $a.origem)
+        }
+        & winget @argsShow 1>$null 2>$null
         if ($LASTEXITCODE -eq 0) {
             '{0,-12} {1,-34} ok'      -f $a.id, $a.winget
         } else {
@@ -470,9 +474,14 @@ function Install-AppWinget {
 
     if (-not $App.winget) { throw "sem pacote winget definido no catalogo" }
 
-    $saida = & winget install --id $App.winget --exact --silent `
-                --accept-package-agreements --accept-source-agreements `
-                --disable-interactivity 2>&1
+    $argumentos = @('install', '--id', $App.winget, '--exact', '--silent',
+                    '--accept-package-agreements', '--accept-source-agreements',
+                    '--disable-interactivity')
+    # Alguns pacotes so existem na Microsoft Store e exigem a fonte explicita.
+    if ($App.PSObject.Properties.Name -contains 'origem' -and $App.origem) {
+        $argumentos += @('--source', $App.origem)
+    }
+    $saida = & winget @argumentos 2>&1
     $codigo = $LASTEXITCODE
 
     # 0x8A150061 = ja instalado; 0x8A15002B = nenhuma atualizacao aplicavel.
@@ -642,6 +651,10 @@ function Invoke-VarreduraAtualizacoes {
             elseif ($instalada -eq $disponivel) { $estado = "em dia ($instalada)";   $marcar = $false }
             else                              { $estado = "$instalada -> $disponivel"; $marcar = $true }
         }
+        elseif ($a.fonte -eq 'manual') {
+            if ($instalada) { $estado = "instalado ($instalada)";  $marcar = $false }
+            else            { $estado = 'instalar manualmente';    $marcar = $true }
+        }
         else {
             if ($instalada) { $estado = "instalado ($instalada)"; $marcar = $false }
             else            { $estado = 'instalar';               $marcar = $true }
@@ -785,7 +798,7 @@ if ($precisaWinget -and -not $temWinget) {
 
 # ----------------------------------------------------------------- instalacao
 Write-Log "Inicio - $($selecionados.Count) app(s), arquitetura $Arch"
-$ok = @(); $falhou = @(); $pulou = @()
+$ok = @(); $falhou = @(); $pulou = @(); $manuais = @()
 $i = 0
 
 foreach ($app in $selecionados) {
@@ -795,6 +808,10 @@ foreach ($app in $selecionados) {
     try {
         switch ($app.fonte) {
             'artcraft'    { Install-AppArtCraft -App $app; $ok += $app.nome }
+            'manual' {
+                $manuais += $app
+                Write-Log "$($app.nome): sem pacote em gerenciador; instalacao manual" 'AVISO'
+            }
             'gerenciador' {
                 if (-not $temWinget) {
                     $pulou += $app.nome
@@ -818,6 +835,15 @@ Write-Host ''
 Write-Host '================ resumo ================'
 Write-Host ("instalados : {0}" -f $ok.Count)
 if ($pulou.Count)  { Write-Host ("pulados    : {0} -> {1}" -f $pulou.Count, ($pulou -join ', ')) -ForegroundColor Yellow }
+if ($manuais.Count) {
+    Write-Host ''
+    Write-Host 'Instale estes na mao (nao existem em gerenciador de pacotes):' -ForegroundColor Yellow
+    foreach ($m in $manuais) {
+        $endereco = ''
+        if ($m.PSObject.Properties.Name -contains 'url' -and $m.url) { $endereco = "  $($m.url)" }
+        Write-Host ("  - {0}{1}" -f $m.nome, $endereco)
+    }
+}
 if ($falhou.Count) {
     Write-Host ("falharam   : {0}" -f $falhou.Count) -ForegroundColor Red
     foreach ($f in $falhou) { Write-Host "  - $f" -ForegroundColor Red }

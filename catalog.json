@@ -198,7 +198,7 @@
           "id": "dbeaver",
           "nome": "DBeaver",
           "fonte": "gerenciador",
-          "winget": "dbeaver.dbeaver",
+          "winget": "DBeaver.DBeaver.Community",
           "brew": "dbeaver-community",
           "cask": true,
           "padrao": true
@@ -369,17 +369,15 @@
         {
           "id": "utorrent",
           "nome": "uTorrent Classic",
-          "fonte": "gerenciador",
-          "winget": "uTorrent.uTorrent",
-          "brew": null,
-          "cask": false,
+          "fonte": "manual",
           "padrao": true,
           "nomes": [
             "*Torrent",
             "µTorrent",
             "μTorrent",
             "uTorrent"
-          ]
+          ],
+          "url": "https://www.utorrent.com/desktop/"
         },
         {
           "id": "filezilla",
@@ -456,16 +454,17 @@
         },
         {
           "id": "nvidia",
-          "nome": "NVIDIA App (drivers Game Ready)",
+          "nome": "NVIDIA App",
           "fonte": "gerenciador",
-          "winget": "Nvidia.GeForceExperience",
+          "winget": "XP8CLZL93F5Z4P",
           "brew": null,
           "cask": false,
           "padrao": true,
           "nomes": [
             "NVIDIA App",
             "NVIDIA GeForce Experience"
-          ]
+          ],
+          "origem": "msstore"
         }
       ]
     }
