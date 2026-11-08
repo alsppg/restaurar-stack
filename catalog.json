@@ -5,61 +5,416 @@
       "id": "office",
       "nome": "Office (substitutos do Microsoft Office)",
       "apps": [
-        { "id": "wordcraft",  "nome": "WordCraft",  "equivale": "Word",       "fonte": "artcraft", "repo": "wordcraft",  "padrao": true },
-        { "id": "gridcraft",  "nome": "GridCraft",  "equivale": "Excel",      "fonte": "artcraft", "repo": "gridcraft",  "padrao": true },
-        { "id": "deckcraft",  "nome": "DeckCraft",  "equivale": "PowerPoint", "fonte": "artcraft", "repo": "deckcraft",  "padrao": true },
-        { "id": "pdfcraft",   "nome": "PdfCraft",   "equivale": "Acrobat",    "fonte": "artcraft", "repo": "pdfcraft",   "padrao": true }
+        {
+          "id": "wordcraft",
+          "nome": "WordCraft",
+          "equivale": "Word",
+          "fonte": "artcraft",
+          "repo": "wordcraft",
+          "padrao": true
+        },
+        {
+          "id": "gridcraft",
+          "nome": "GridCraft",
+          "equivale": "Excel",
+          "fonte": "artcraft",
+          "repo": "gridcraft",
+          "padrao": true
+        },
+        {
+          "id": "deckcraft",
+          "nome": "DeckCraft",
+          "equivale": "PowerPoint",
+          "fonte": "artcraft",
+          "repo": "deckcraft",
+          "padrao": true
+        },
+        {
+          "id": "pdfcraft",
+          "nome": "PdfCraft",
+          "equivale": "Acrobat",
+          "fonte": "artcraft",
+          "repo": "pdfcraft",
+          "padrao": true
+        }
       ]
     },
     {
       "id": "criacao",
       "nome": "Criacao (substitutos do Adobe Creative Cloud)",
       "apps": [
-        { "id": "photocraft",  "nome": "PhotoCraft",  "equivale": "Photoshop",    "fonte": "artcraft", "repo": "photocraft",  "padrao": true },
-        { "id": "lightcraft",  "nome": "LightCraft",  "equivale": "Lightroom",    "fonte": "artcraft", "repo": "lightcraft",  "padrao": true },
-        { "id": "vectorcraft", "nome": "VectorCraft", "equivale": "Illustrator",  "fonte": "artcraft", "repo": "vectorcraft", "padrao": true },
-        { "id": "designcraft", "nome": "DesignCraft", "equivale": "InDesign",     "fonte": "artcraft", "repo": "designcraft", "padrao": true },
-        { "id": "filmcraft",   "nome": "FilmCraft",   "equivale": "Premiere",     "fonte": "artcraft", "repo": "filmcraft",   "padrao": true },
-        { "id": "effectcraft", "nome": "EffectCraft", "equivale": "After Effects","fonte": "artcraft", "repo": "effectcraft", "padrao": true },
-        { "id": "soundcraft",  "nome": "SoundCraft",  "equivale": "Audition / Pro Tools", "fonte": "artcraft", "repo": "soundcraft", "padrao": true },
-        { "id": "figcraft",    "nome": "FigCraft",    "equivale": "Figma",        "fonte": "artcraft", "repo": "figcraft",    "padrao": true },
-        { "id": "cadcraft",    "nome": "CADCraft",    "equivale": "AutoCAD",      "fonte": "artcraft", "repo": "cadcraft",    "padrao": true }
+        {
+          "id": "photocraft",
+          "nome": "PhotoCraft",
+          "equivale": "Photoshop",
+          "fonte": "artcraft",
+          "repo": "photocraft",
+          "padrao": true
+        },
+        {
+          "id": "lightcraft",
+          "nome": "LightCraft",
+          "equivale": "Lightroom",
+          "fonte": "artcraft",
+          "repo": "lightcraft",
+          "padrao": true
+        },
+        {
+          "id": "vectorcraft",
+          "nome": "VectorCraft",
+          "equivale": "Illustrator",
+          "fonte": "artcraft",
+          "repo": "vectorcraft",
+          "padrao": true
+        },
+        {
+          "id": "designcraft",
+          "nome": "DesignCraft",
+          "equivale": "InDesign",
+          "fonte": "artcraft",
+          "repo": "designcraft",
+          "padrao": true
+        },
+        {
+          "id": "filmcraft",
+          "nome": "FilmCraft",
+          "equivale": "Premiere",
+          "fonte": "artcraft",
+          "repo": "filmcraft",
+          "padrao": true
+        },
+        {
+          "id": "effectcraft",
+          "nome": "EffectCraft",
+          "equivale": "After Effects",
+          "fonte": "artcraft",
+          "repo": "effectcraft",
+          "padrao": true
+        },
+        {
+          "id": "soundcraft",
+          "nome": "SoundCraft",
+          "equivale": "Audition / Pro Tools",
+          "fonte": "artcraft",
+          "repo": "soundcraft",
+          "padrao": true
+        },
+        {
+          "id": "figcraft",
+          "nome": "FigCraft",
+          "equivale": "Figma",
+          "fonte": "artcraft",
+          "repo": "figcraft",
+          "padrao": true
+        },
+        {
+          "id": "cadcraft",
+          "nome": "CADCraft",
+          "equivale": "AutoCAD",
+          "fonte": "artcraft",
+          "repo": "cadcraft",
+          "padrao": true
+        }
       ]
     },
     {
       "id": "artcraft-extra",
       "nome": "ArtCraft - gerenciador",
       "apps": [
-        { "id": "artcraft-launcher", "nome": "ArtCraft Launcher", "equivale": "atualiza os apps Craft", "fonte": "artcraft", "repo": "craft-launcher", "arquivo": "artcraft-launcher", "padrao": true }
+        {
+          "id": "artcraft-launcher",
+          "nome": "ArtCraft Launcher",
+          "equivale": "atualiza os apps Craft",
+          "fonte": "artcraft",
+          "repo": "craft-launcher",
+          "arquivo": "artcraft-launcher",
+          "padrao": true
+        }
       ]
     },
     {
       "id": "dev",
       "nome": "Desenvolvimento",
       "apps": [
-        { "id": "git",      "nome": "Git",                 "fonte": "gerenciador", "winget": "Git.Git",                     "brew": "git",                "cask": false, "padrao": true },
-        { "id": "node",     "nome": "Node.js LTS",         "fonte": "gerenciador", "winget": "OpenJS.NodeJS.LTS",           "brew": "node",               "cask": false, "padrao": true },
-        { "id": "vscode",   "nome": "Visual Studio Code",  "fonte": "gerenciador", "winget": "Microsoft.VisualStudioCode",  "brew": "visual-studio-code", "cask": true,  "padrao": true },
-        { "id": "ghcli",    "nome": "GitHub CLI",          "fonte": "gerenciador", "winget": "GitHub.cli",                  "brew": "gh",                 "cask": false, "padrao": true },
-        { "id": "terminal", "nome": "Windows Terminal",    "fonte": "gerenciador", "winget": "Microsoft.WindowsTerminal",   "brew": null,                 "cask": false, "padrao": true },
-        { "id": "dbeaver",  "nome": "DBeaver",             "fonte": "gerenciador", "winget": "dbeaver.dbeaver",             "brew": "dbeaver-community",  "cask": true,  "padrao": true },
-        { "id": "winscp",   "nome": "WinSCP",              "fonte": "gerenciador", "winget": "WinSCP.WinSCP",               "brew": null,                 "cask": false, "padrao": true }
+        {
+          "id": "git",
+          "nome": "Git",
+          "fonte": "gerenciador",
+          "winget": "Git.Git",
+          "brew": "git",
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "node",
+          "nome": "Node.js LTS",
+          "fonte": "gerenciador",
+          "winget": "OpenJS.NodeJS.LTS",
+          "brew": "node",
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "vscode",
+          "nome": "Visual Studio Code",
+          "fonte": "gerenciador",
+          "winget": "Microsoft.VisualStudioCode",
+          "brew": "visual-studio-code",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "ghcli",
+          "nome": "GitHub CLI",
+          "fonte": "gerenciador",
+          "winget": "GitHub.cli",
+          "brew": "gh",
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "terminal",
+          "nome": "Windows Terminal",
+          "fonte": "gerenciador",
+          "winget": "Microsoft.WindowsTerminal",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "dbeaver",
+          "nome": "DBeaver",
+          "fonte": "gerenciador",
+          "winget": "dbeaver.dbeaver",
+          "brew": "dbeaver-community",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "winscp",
+          "nome": "WinSCP",
+          "fonte": "gerenciador",
+          "winget": "WinSCP.WinSCP",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        }
       ]
     },
     {
       "id": "utilidades",
       "nome": "Utilidades",
       "apps": [
-        { "id": "chrome",    "nome": "Google Chrome",  "fonte": "gerenciador", "winget": "Google.Chrome",            "brew": "google-chrome",  "cask": true, "padrao": true },
-        { "id": "firefox",   "nome": "Mozilla Firefox","fonte": "gerenciador", "winget": "Mozilla.Firefox",          "brew": "firefox",        "cask": true, "padrao": true },
-        { "id": "drive",     "nome": "Google Drive",   "fonte": "gerenciador", "winget": "Google.GoogleDrive",       "brew": "google-drive",   "cask": true, "padrao": true },
-        { "id": "7zip",      "nome": "7-Zip",          "fonte": "gerenciador", "winget": "7zip.7zip",                "brew": "keka",           "cask": true, "padrao": true },
-        { "id": "notepadpp", "nome": "Notepad++",      "fonte": "gerenciador", "winget": "Notepad++.Notepad++",      "brew": null,             "cask": false,"padrao": true },
-        { "id": "powertoys", "nome": "PowerToys",      "fonte": "gerenciador", "winget": "Microsoft.PowerToys",      "brew": null,             "cask": false,"padrao": true },
-        { "id": "vlc",       "nome": "VLC",            "fonte": "gerenciador", "winget": "VideoLAN.VLC",             "brew": "vlc",            "cask": true, "padrao": true },
-        { "id": "obs",       "nome": "OBS Studio",     "fonte": "gerenciador", "winget": "OBSProject.OBSStudio",     "brew": "obs",            "cask": true, "padrao": true },
-        { "id": "telegram",  "nome": "Telegram",       "fonte": "gerenciador", "winget": "Telegram.TelegramDesktop", "brew": "telegram",       "cask": true, "padrao": true },
-        { "id": "zoom",      "nome": "Zoom",           "fonte": "gerenciador", "winget": "Zoom.Zoom",                "brew": "zoom",           "cask": true, "padrao": true }
+        {
+          "id": "chrome",
+          "nome": "Google Chrome",
+          "fonte": "gerenciador",
+          "winget": "Google.Chrome",
+          "brew": "google-chrome",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "firefox",
+          "nome": "Mozilla Firefox",
+          "fonte": "gerenciador",
+          "winget": "Mozilla.Firefox",
+          "brew": "firefox",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "drive",
+          "nome": "Google Drive",
+          "fonte": "gerenciador",
+          "winget": "Google.GoogleDrive",
+          "brew": "google-drive",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "7zip",
+          "nome": "7-Zip",
+          "fonte": "gerenciador",
+          "winget": "7zip.7zip",
+          "brew": "keka",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "notepadpp",
+          "nome": "Notepad++",
+          "fonte": "gerenciador",
+          "winget": "Notepad++.Notepad++",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "powertoys",
+          "nome": "PowerToys",
+          "fonte": "gerenciador",
+          "winget": "Microsoft.PowerToys",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "vlc",
+          "nome": "VLC",
+          "fonte": "gerenciador",
+          "winget": "VideoLAN.VLC",
+          "brew": "vlc",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "obs",
+          "nome": "OBS Studio",
+          "fonte": "gerenciador",
+          "winget": "OBSProject.OBSStudio",
+          "brew": "obs",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "telegram",
+          "nome": "Telegram",
+          "fonte": "gerenciador",
+          "winget": "Telegram.TelegramDesktop",
+          "brew": "telegram",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "zoom",
+          "nome": "Zoom",
+          "fonte": "gerenciador",
+          "winget": "Zoom.Zoom",
+          "brew": "zoom",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "whatsapp",
+          "nome": "WhatsApp",
+          "fonte": "gerenciador",
+          "winget": "WhatsApp.WhatsApp",
+          "brew": "whatsapp",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "spotify",
+          "nome": "Spotify",
+          "fonte": "gerenciador",
+          "winget": "Spotify.Spotify",
+          "brew": "spotify",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "winrar",
+          "nome": "WinRAR",
+          "fonte": "gerenciador",
+          "winget": "RARLab.WinRAR",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "klite",
+          "nome": "K-Lite Codec Pack Mega (inclui MPC-HC)",
+          "fonte": "gerenciador",
+          "winget": "CodecGuide.K-LiteCodecPack.Mega",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "utorrent",
+          "nome": "uTorrent Classic",
+          "fonte": "gerenciador",
+          "winget": "uTorrent.uTorrent",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        },
+        {
+          "id": "filezilla",
+          "nome": "FileZilla",
+          "fonte": "gerenciador",
+          "winget": "TimKosse.FileZilla.Client",
+          "brew": "filezilla",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "steam",
+          "nome": "Steam",
+          "fonte": "gerenciador",
+          "winget": "Valve.Steam",
+          "brew": "steam",
+          "cask": true,
+          "padrao": true
+        }
+      ]
+    },
+    {
+      "id": "ia",
+      "nome": "IA",
+      "apps": [
+        {
+          "id": "claude",
+          "nome": "Claude",
+          "fonte": "gerenciador",
+          "winget": "Anthropic.Claude",
+          "brew": "claude",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "chatgpt",
+          "nome": "ChatGPT",
+          "fonte": "gerenciador",
+          "winget": "OpenAI.ChatGPT",
+          "brew": "chatgpt",
+          "cask": true,
+          "padrao": true
+        }
+      ]
+    },
+    {
+      "id": "sistema",
+      "nome": "Sistema e rede",
+      "apps": [
+        {
+          "id": "cryptomator",
+          "nome": "Cryptomator",
+          "fonte": "gerenciador",
+          "winget": "Cryptomator.Cryptomator",
+          "brew": "cryptomator",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "warp",
+          "nome": "Cloudflare WARP",
+          "fonte": "gerenciador",
+          "winget": "Cloudflare.Warp",
+          "brew": "cloudflare-warp",
+          "cask": true,
+          "padrao": true
+        },
+        {
+          "id": "nvidia",
+          "nome": "NVIDIA App (drivers Game Ready)",
+          "fonte": "gerenciador",
+          "winget": "Nvidia.GeForceExperience",
+          "brew": null,
+          "cask": false,
+          "padrao": true
+        }
       ]
     }
   ]

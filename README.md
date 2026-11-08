@@ -61,6 +61,10 @@ So alguns, pelo id do catalogo:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Apenas wordcraft,gridcraft,vscode
 
+Conferir se todos os ids do winget no catalogo existem de fato:
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -VerificarIds
+
 Listar o catalogo sem instalar nada:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Listar

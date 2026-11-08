@@ -18,6 +18,7 @@ param(
     [switch]$Tudo,
     [string[]]$Apenas,
     [switch]$Listar,
+    [switch]$VerificarIds,
     [string]$Catalogo
 )
 
@@ -80,6 +81,35 @@ if ($Listar) {
             $eq = if ($a.PSObject.Properties.Name -contains 'equivale' -and $a.equivale) { " ($($a.equivale))" } else { '' }
             '  {0,-20} {1}{2}' -f $a.id, $a.nome, $eq
         }
+    }
+    return
+}
+
+if ($VerificarIds) {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        throw 'winget nao encontrado; instale o "Instalador de Aplicativo" pela Microsoft Store.'
+    }
+    $alvos = @($TodosApps | Where-Object { $_.fonte -eq 'gerenciador' })
+    $maus  = @()
+    $n = 0
+    foreach ($a in $alvos) {
+        $n++
+        Write-Progress -Activity 'Conferindo ids do winget' -Status $a.nome -PercentComplete ([int](100 * $n / $alvos.Count))
+        & winget show --id $a.winget --exact --disable-interactivity 1>$null 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            '{0,-12} {1,-34} ok'      -f $a.id, $a.winget
+        } else {
+            '{0,-12} {1,-34} NAO EXISTE' -f $a.id, $a.winget
+            $maus += $a
+        }
+    }
+    Write-Progress -Activity 'Conferindo ids do winget' -Completed
+    Write-Host ''
+    if ($maus.Count) {
+        Write-Host ("{0} id(s) invalido(s). Procure o certo com:" -f $maus.Count) -ForegroundColor Yellow
+        foreach ($m in $maus) { Write-Host ("  winget search ""{0}""" -f $m.nome) }
+    } else {
+        Write-Host 'Todos os ids do catalogo existem no winget.' -ForegroundColor Green
     }
     return
 }
@@ -172,10 +202,29 @@ function Install-AppArtCraft {
     Write-Log "$($App.nome): SHA-256 confere"
 
     # MSI dos apps Craft instala no perfil do usuario; nao exige admin.
-    $p = Start-Process -FilePath 'msiexec.exe' `
-                       -ArgumentList @('/i', "`"$destino`"", '/qn', '/norestart') `
-                       -Wait -PassThru
+    # 1618 = ERROR_INSTALL_ALREADY_RUNNING: o Windows Installer aceita uma
+    # instalacao por vez e o MSI anterior ainda nao soltou o lock. Nao e erro
+    # definitivo: espera e repete.
+    $maxTentativas = 12
+    $tentativa     = 0
+    $p             = $null
+
+    while ($tentativa -lt $maxTentativas) {
+        $tentativa++
+        $p = Start-Process -FilePath 'msiexec.exe' `
+                           -ArgumentList @('/i', "`"$destino`"", '/qn', '/norestart') `
+                           -Wait -PassThru
+        if ($p.ExitCode -ne 1618) { break }
+        if ($tentativa -lt $maxTentativas) {
+            Write-Log ("{0}: Windows Installer ocupado; nova tentativa em 15s ({1}/{2})" -f $App.nome, $tentativa, $maxTentativas) 'AVISO'
+            Start-Sleep -Seconds 15
+        }
+    }
+
     # 3010 = instalado, pede reinicio.
+    if ($p.ExitCode -eq 1618) {
+        throw "Windows Installer seguiu ocupado apos $maxTentativas tentativas (codigo 1618). Feche outras instalacoes ou o Windows Update e rode de novo."
+    }
     if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
         throw "msiexec terminou com codigo $($p.ExitCode)"
     }
