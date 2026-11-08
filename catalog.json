@@ -417,5 +417,37 @@
         }
       ]
     }
+  ],
+  "remover": [
+    {
+      "id": "teams",
+      "nome": "Microsoft Teams",
+      "registro": [
+        "Microsoft Teams*",
+        "Teams Machine-Wide Installer*"
+      ],
+      "appx": [
+        "MSTeams",
+        "MicrosoftTeams"
+      ]
+    },
+    {
+      "id": "skype",
+      "nome": "Skype",
+      "registro": [
+        "Skype*"
+      ],
+      "appx": [
+        "Microsoft.SkypeApp"
+      ]
+    },
+    {
+      "id": "bonjour",
+      "nome": "Bonjour (Apple)",
+      "registro": [
+        "Bonjour*"
+      ],
+      "appx": []
+    }
   ]
 }

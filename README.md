@@ -61,6 +61,22 @@ So alguns, pelo id do catalogo:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Apenas wordcraft,gridcraft,vscode
 
+Remover os programas indesejados que vem junto com o Windows:
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Limpar
+
+Abre uma tela separada, listando **apenas o que de fato esta instalado** nesta
+maquina entre os itens da secao `remover` do catalogo. Tudo comeca
+**desmarcado**, porque remocao e destrutiva, e ainda ha uma confirmacao
+nomeando cada item antes de executar. Remove tanto programa classico (pelo
+desinstalador silencioso ou por `msiexec /x`) quanto app da Microsoft Store
+(`Remove-AppxPackage`). O que nao publica desinstalacao silenciosa e reportado
+para voce tirar na mao por Aplicativos e Recursos.
+
+Para editar a lista, mexa na secao `remover` do `catalog.json`: cada entrada
+casa por padrao de nome no registro (`registro`) e por nome de pacote da Store
+(`appx`).
+
 Conferir se todos os ids do winget no catalogo existem de fato:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -VerificarIds

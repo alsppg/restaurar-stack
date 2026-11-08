@@ -19,6 +19,7 @@ param(
     [string[]]$Apenas,
     [switch]$Listar,
     [switch]$VerificarIds,
+    [switch]$Limpar,
     [string]$Catalogo
 )
 
@@ -111,6 +112,238 @@ if ($VerificarIds) {
     } else {
         Write-Host 'Todos os ids do catalogo existem no winget.' -ForegroundColor Green
     }
+    return
+}
+
+
+# ============================================================ remover bloatware
+function Get-ChavesDesinstalacao {
+    $caminhos = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    $lista = New-Object Collections.ArrayList
+    foreach ($c in $caminhos) {
+        try {
+            $itens = Get-ItemProperty -Path $c -ErrorAction SilentlyContinue |
+                     Where-Object { $_.PSObject.Properties.Name -contains 'DisplayName' -and $_.DisplayName }
+            foreach ($it in $itens) {
+                $props = $it.PSObject.Properties.Name
+                # Valores calculados antes: o PS 5.1 nao aceita "if" na posicao
+                # de valor de um literal de hashtable.
+                $ver = ''
+                if ($props -contains 'DisplayVersion')       { $ver = [string]$it.DisplayVersion }
+                $cmd = ''
+                if ($props -contains 'UninstallString')      { $cmd = [string]$it.UninstallString }
+                $qui = ''
+                if ($props -contains 'QuietUninstallString') { $qui = [string]$it.QuietUninstallString }
+                [void]$lista.Add([pscustomobject]@{
+                    Nome       = [string]$it.DisplayName
+                    Versao     = $ver
+                    Codigo     = [string]$it.PSChildName
+                    Comando    = $cmd
+                    Silencioso = $qui
+                })
+            }
+        } catch { }
+    }
+    return $lista
+}
+
+function Find-Bloatware {
+    <# Devolve so o que realmente existe nesta maquina. #>
+    param($Definicoes)
+
+    $chaves    = Get-ChavesDesinstalacao
+    $achados   = New-Object Collections.ArrayList
+    $temAppx   = [bool](Get-Command Get-AppxPackage -ErrorAction SilentlyContinue)
+
+    foreach ($def in $Definicoes) {
+        foreach ($padrao in $def.registro) {
+            foreach ($k in $chaves) {
+                if ($k.Nome -like $padrao) {
+                    [void]$achados.Add([pscustomobject]@{
+                        Id = $def.id; Nome = $k.Nome; Versao = $k.Versao
+                        Tipo = 'registro'; Codigo = $k.Codigo
+                        Comando = $k.Comando; Silencioso = $k.Silencioso
+                    })
+                }
+            }
+        }
+        if ($temAppx -and $def.appx) {
+            foreach ($nomeAppx in $def.appx) {
+                try {
+                    $pacotes = Get-AppxPackage -Name $nomeAppx -ErrorAction SilentlyContinue
+                    foreach ($pk in $pacotes) {
+                        [void]$achados.Add([pscustomobject]@{
+                            Id = $def.id; Nome = "$($pk.Name) (app da Store)"; Versao = [string]$pk.Version
+                            Tipo = 'appx'; Codigo = [string]$pk.PackageFullName
+                            Comando = ''; Silencioso = ''
+                        })
+                    }
+                } catch { }
+            }
+        }
+    }
+    return $achados
+}
+
+function Remove-ItemBloat {
+    param([Parameter(Mandatory)]$Item)
+
+    if ($Item.Tipo -eq 'appx') {
+        Remove-AppxPackage -Package $Item.Codigo -ErrorAction Stop
+        return
+    }
+
+    # MSI: converter /I{GUID} em /X{GUID} silencioso.
+    if ($Item.Codigo -match '^\{[0-9A-Fa-f-]{36}\}$' -or $Item.Comando -match 'msiexec') {
+        $guid = $null
+        if ($Item.Codigo -match '^\{[0-9A-Fa-f-]{36}\}$') { $guid = $Item.Codigo }
+        elseif ($Item.Comando -match '(\{[0-9A-Fa-f-]{36}\})') { $guid = $Matches[1] }
+
+        if ($guid) {
+            $tentativa = 0
+            $p = $null
+            while ($tentativa -lt 12) {
+                $tentativa++
+                $p = Start-Process -FilePath 'msiexec.exe' `
+                                   -ArgumentList @('/x', $guid, '/qn', '/norestart') `
+                                   -Wait -PassThru
+                if ($p.ExitCode -ne 1618) { break }
+                Write-Log ("{0}: Windows Installer ocupado; nova tentativa em 15s ({1}/12)" -f $Item.Nome, $tentativa) 'AVISO'
+                Start-Sleep -Seconds 15
+            }
+            # 1605 = o produto nao esta instalado; ja era o que queriamos.
+            if ($p.ExitCode -notin @(0, 1605, 3010)) {
+                throw "msiexec /x terminou com codigo $($p.ExitCode)"
+            }
+            return
+        }
+    }
+
+    if ($Item.Silencioso) {
+        $p = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', $Item.Silencioso) -Wait -PassThru
+        if ($p.ExitCode -ne 0) { throw "desinstalador terminou com codigo $($p.ExitCode)" }
+        return
+    }
+
+    throw 'nao ha desinstalacao silenciosa publicada; remova por Aplicativos e Recursos'
+}
+
+function Show-JanelaLimpeza {
+    param([Parameter(Mandatory)]$Achados)
+
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    [Windows.Forms.Application]::EnableVisualStyles()
+
+    $script:formL = New-Object Windows.Forms.Form
+    $f = $script:formL
+    $f.Text          = 'Remover programas'
+    $f.Size          = New-Object Drawing.Size(560, 460)
+    $f.StartPosition = 'CenterScreen'
+
+    $cab          = New-Object Windows.Forms.Label
+    $cab.Text     = "Encontrados nesta maquina. Marque o que remover - tudo comeca desmarcado."
+    $cab.Dock     = 'Top'
+    $cab.Height   = 34
+    $cab.Padding  = New-Object Windows.Forms.Padding(12, 10, 12, 0)
+    $f.Controls.Add($cab)
+
+    $painel            = New-Object Windows.Forms.Panel
+    $painel.Dock       = 'Fill'
+    $painel.AutoScroll = $true
+    $painel.Padding    = New-Object Windows.Forms.Padding(12, 4, 12, 4)
+    $f.Controls.Add($painel)
+    $painel.BringToFront()
+
+    $rodape        = New-Object Windows.Forms.FlowLayoutPanel
+    $rodape.Dock   = 'Bottom'
+    $rodape.Height = 52
+    $rodape.Padding= New-Object Windows.Forms.Padding(10, 10, 10, 10)
+    $f.Controls.Add($rodape)
+
+    $script:caixasL = New-Object Collections.ArrayList
+    $y = 6
+    foreach ($a in $Achados) {
+        $cb          = New-Object Windows.Forms.CheckBox
+        $v = if ($a.Versao) { " $($a.Versao)" } else { '' }
+        $cb.Text     = '{0}{1}' -f $a.Nome, $v
+        $cb.AutoSize = $true
+        $cb.Checked  = $false
+        $cb.Location = New-Object Drawing.Point(16, $y)
+        $cb.Tag      = $a
+        $painel.Controls.Add($cb)
+        [void]$script:caixasL.Add($cb)
+        $y += 24
+    }
+
+    $btTodos = New-Object Windows.Forms.Button; $btTodos.Text = 'Marcar todos'; $btTodos.Width = 110; $btTodos.Height = 30
+    $btNada  = New-Object Windows.Forms.Button; $btNada.Text  = 'Desmarcar todos'; $btNada.Width = 125; $btNada.Height = 30
+    $btOk    = New-Object Windows.Forms.Button; $btOk.Text    = 'Remover'; $btOk.Width = 110; $btOk.Height = 30
+    $btSair  = New-Object Windows.Forms.Button; $btSair.Text  = 'Cancelar'; $btSair.Width = 90; $btSair.Height = 30
+
+    $btTodos.Add_Click({ foreach ($c in $script:caixasL) { $c.Checked = $true  } })
+    $btNada.Add_Click({  foreach ($c in $script:caixasL) { $c.Checked = $false } })
+
+    $script:confirmadoL = $false
+    $btOk.Add_Click({ $script:confirmadoL = $true; $script:formL.Close() })
+    $btSair.Add_Click({ $script:confirmadoL = $false; $script:formL.Close() })
+
+    $rodape.Controls.AddRange(@($btTodos, $btNada, $btOk, $btSair))
+    $f.CancelButton = $btSair
+    [void]$f.ShowDialog()
+
+    if (-not $script:confirmadoL) { return @() }
+    return @($script:caixasL | Where-Object { $_.Checked } | ForEach-Object { $_.Tag })
+}
+
+if ($Limpar) {
+    if (-not ($cat.PSObject.Properties.Name -contains 'remover') -or -not $cat.remover) {
+        throw 'o catalogo nao tem a secao "remover"'
+    }
+
+    Write-Host 'Procurando os programas da lista de remocao nesta maquina...'
+    $achados = @(Find-Bloatware -Definicoes $cat.remover)
+
+    if ($achados.Count -eq 0) {
+        Write-Host 'Nenhum deles esta instalado. Nada a fazer.' -ForegroundColor Green
+        return
+    }
+
+    $escolhidos = @(Show-JanelaLimpeza -Achados $achados)
+    if ($escolhidos.Count -eq 0) { Write-Host 'Nada selecionado. Nenhuma alteracao feita.'; return }
+
+    Add-Type -AssemblyName System.Windows.Forms
+    $texto = "Isto vai DESINSTALAR da maquina:`n`n" +
+             (($escolhidos | ForEach-Object { " - $($_.Nome)" }) -join "`n") +
+             "`n`nConfirma?"
+    $r = [Windows.Forms.MessageBox]::Show($texto, 'Confirmar remocao',
+         [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Warning)
+    if ($r -ne [Windows.Forms.DialogResult]::Yes) { Write-Host 'Cancelado.'; return }
+
+    $okR = 0; $falhasR = @()
+    foreach ($item in $escolhidos) {
+        Write-Host ''
+        Write-Log "removendo $($item.Nome)"
+        try { Remove-ItemBloat -Item $item; $okR++; Write-Log "$($item.Nome): removido" }
+        catch {
+            $falhasR += ('{0} ({1})' -f $item.Nome, $_.Exception.Message)
+            Write-Log "$($item.Nome): FALHOU - $($_.Exception.Message)" ERRO
+        }
+    }
+
+    Write-Host ''
+    Write-Host '================ resumo ================'
+    Write-Host ("removidos : {0}" -f $okR)
+    if ($falhasR.Count) {
+        Write-Host ("falharam  : {0}" -f $falhasR.Count) -ForegroundColor Red
+        foreach ($x in $falhasR) { Write-Host "  - $x" -ForegroundColor Red }
+    }
+    Write-Host ("log       : {0}" -f $LogFile)
+    Write-Log "Limpeza - removidos=$okR falhas=$($falhasR.Count)"
     return
 }
 
