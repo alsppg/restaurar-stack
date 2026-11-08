@@ -550,6 +550,27 @@ function Find-VersaoPorIdWinget {
     return $null
 }
 
+function Find-VersaoAppx {
+    <#
+      Terceira via de deteccao: app da Microsoft Store nao cria chave de
+      desinstalacao no registro, e so aparece no "winget export" se a fonte
+      msstore estiver configurada na maquina. Get-AppxPackage sempre ve.
+    #>
+    param($App)
+    if ($App.PSObject.Properties.Name -notcontains 'appx' -or -not $App.appx) { return $null }
+    if (-not (Get-Command Get-AppxPackage -ErrorAction SilentlyContinue)) { return $null }
+    foreach ($nomeAppx in $App.appx) {
+        try {
+            $pk = Get-AppxPackage -Name $nomeAppx -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($pk) {
+                if ($pk.Version) { return [string]$pk.Version }
+                return 'instalado'
+            }
+        } catch { }
+    }
+    return $null
+}
+
 function Find-VersaoInstalada {
     param($Inventario, [string]$Nome)
     foreach ($i in $Inventario) {
@@ -583,6 +604,9 @@ function Invoke-VarreduraAtualizacoes {
         $instalada = $null
         if ($a.fonte -eq 'gerenciador' -and $a.winget) {
             $instalada = Find-VersaoPorIdWinget -IdsInstalados $idsWinget -Id $a.winget
+        }
+        if (-not $instalada) {
+            $instalada = Find-VersaoAppx -App $a
         }
         if (-not $instalada) {
             $instalada = Find-VersaoInstalada -Inventario $inv -Nome $a.nome

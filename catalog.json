@@ -179,7 +179,10 @@
           "winget": "Microsoft.WindowsTerminal",
           "brew": null,
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "appx": [
+            "Microsoft.WindowsTerminal"
+          ]
         },
         {
           "id": "dbeaver",
@@ -302,7 +305,11 @@
           "winget": "WhatsApp.WhatsApp",
           "brew": "whatsapp",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "appx": [
+            "5319275A.WhatsAppDesktop",
+            "WhatsApp"
+          ]
         },
         {
           "id": "spotify",
@@ -311,7 +318,11 @@
           "winget": "Spotify.Spotify",
           "brew": "spotify",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "appx": [
+            "SpotifyAB.SpotifyMusic",
+            "Spotify"
+          ]
         },
         {
           "id": "winrar",
@@ -371,7 +382,11 @@
           "winget": "Anthropic.Claude",
           "brew": "claude",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "appx": [
+            "Anthropic.Claude",
+            "Claude"
+          ]
         },
         {
           "id": "chatgpt",
