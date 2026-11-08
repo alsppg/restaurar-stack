@@ -609,7 +609,17 @@ function Invoke-VarreduraAtualizacoes {
             $instalada = Find-VersaoAppx -App $a
         }
         if (-not $instalada) {
-            $instalada = Find-VersaoInstalada -Inventario $inv -Nome $a.nome
+            # O nome no registro nem sempre e o do catalogo (uTorrent se
+            # registra com mu grego; o VS Code, como "Microsoft Visual
+            # Studio Code"). O campo "nomes" lista as variantes conhecidas.
+            $candidatos = @($a.nome)
+            if ($a.PSObject.Properties.Name -contains 'nomes' -and $a.nomes) {
+                $candidatos = @($a.nomes) + $candidatos
+            }
+            foreach ($cand in $candidatos) {
+                $instalada = Find-VersaoInstalada -Inventario $inv -Nome $cand
+                if ($instalada) { break }
+            }
         }
 
         $estado = ''

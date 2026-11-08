@@ -152,7 +152,10 @@
           "winget": "OpenJS.NodeJS.LTS",
           "brew": "node",
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Node.js"
+          ]
         },
         {
           "id": "vscode",
@@ -161,7 +164,11 @@
           "winget": "Microsoft.VisualStudioCode",
           "brew": "visual-studio-code",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Microsoft Visual Studio Code",
+            "Visual Studio Code"
+          ]
         },
         {
           "id": "ghcli",
@@ -170,7 +177,10 @@
           "winget": "GitHub.cli",
           "brew": "gh",
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "GitHub CLI"
+          ]
         },
         {
           "id": "terminal",
@@ -233,7 +243,10 @@
           "winget": "Google.GoogleDrive",
           "brew": "google-drive",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Google Drive"
+          ]
         },
         {
           "id": "7zip",
@@ -287,7 +300,11 @@
           "winget": "Telegram.TelegramDesktop",
           "brew": "telegram",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Telegram Desktop",
+            "Telegram"
+          ]
         },
         {
           "id": "zoom",
@@ -296,7 +313,11 @@
           "winget": "Zoom.Zoom",
           "brew": "zoom",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Zoom Workplace",
+            "Zoom"
+          ]
         },
         {
           "id": "whatsapp",
@@ -340,7 +361,10 @@
           "winget": "CodecGuide.K-LiteCodecPack.Mega",
           "brew": null,
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "K-Lite Codec Pack"
+          ]
         },
         {
           "id": "utorrent",
@@ -349,7 +373,11 @@
           "winget": "uTorrent.uTorrent",
           "brew": null,
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "μTorrent",
+            "uTorrent"
+          ]
         },
         {
           "id": "filezilla",
@@ -419,7 +447,10 @@
           "winget": "Cloudflare.Warp",
           "brew": "cloudflare-warp",
           "cask": true,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "Cloudflare WARP"
+          ]
         },
         {
           "id": "nvidia",
@@ -428,7 +459,11 @@
           "winget": "Nvidia.GeForceExperience",
           "brew": null,
           "cask": false,
-          "padrao": true
+          "padrao": true,
+          "nomes": [
+            "NVIDIA App",
+            "NVIDIA GeForce Experience"
+          ]
         }
       ]
     }
