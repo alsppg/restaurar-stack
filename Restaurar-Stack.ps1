@@ -477,6 +477,11 @@ function Install-AppWinget {
 
     # 0x8A150061 = ja instalado; 0x8A15002B = nenhuma atualizacao aplicavel.
     $jaInstalado = @(-1978335135, -1978335189)
+    # -1978335212 = APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND: o id nao
+    # existe no winget. Erro de catalogo, nao da maquina.
+    if ($codigo -eq -1978335212) {
+        throw "o id '$($App.winget)' nao existe no winget. Procure o certo com: winget search ""$($App.nome)"""
+    }
     if ($codigo -ne 0 -and $jaInstalado -notcontains $codigo) {
         throw "winget terminou com codigo $codigo : $($saida | Select-Object -Last 1)"
     }
