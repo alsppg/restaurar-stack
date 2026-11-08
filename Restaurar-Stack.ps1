@@ -505,6 +505,51 @@ function Get-InventarioInstalado {
     return $lista
 }
 
+function Get-IdsWingetInstalados {
+    <#
+      Pergunta ao winget o que esta instalado, em vez de adivinhar pelo nome no
+      registro. O "winget export" sai em JSON e cobre tanto programa classico
+      quanto app da Microsoft Store. Uma chamada so para todos os apps.
+    #>
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { return @() }
+
+    $tmp = Join-Path $BaseDir 'winget-export.json'
+    $ids = New-Object Collections.ArrayList
+    try {
+        & winget export --output $tmp --include-versions `
+                        --accept-source-agreements --disable-interactivity 1>$null 2>$null
+        if (-not (Test-Path -LiteralPath $tmp)) { return @() }
+
+        $j = Get-Content -LiteralPath $tmp -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($src in $j.Sources) {
+            foreach ($pk in $src.Packages) {
+                $nomesProp = $pk.PSObject.Properties.Name
+                if ($nomesProp -notcontains 'PackageIdentifier') { continue }
+                $v = ''
+                if ($nomesProp -contains 'Version') { $v = [string]$pk.Version }
+                [void]$ids.Add([pscustomobject]@{
+                    Id     = [string]$pk.PackageIdentifier
+                    Versao = $v
+                })
+            }
+        }
+    } catch { }
+    finally { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+    return $ids
+}
+
+function Find-VersaoPorIdWinget {
+    param($IdsInstalados, [string]$Id)
+    if (-not $Id) { return $null }
+    foreach ($i in $IdsInstalados) {
+        if ($i.Id -and $i.Id.ToLowerInvariant() -eq $Id.ToLowerInvariant()) {
+            if ($i.Versao) { return $i.Versao }
+            return 'instalado'
+        }
+    }
+    return $null
+}
+
 function Find-VersaoInstalada {
     param($Inventario, [string]$Nome)
     foreach ($i in $Inventario) {
@@ -522,9 +567,10 @@ function Invoke-VarreduraAtualizacoes {
     #>
     param($Apps)
 
-    $inv   = Get-InventarioInstalado
-    $total = @($Apps).Count
-    $n     = 0
+    $inv      = Get-InventarioInstalado
+    $idsWinget = Get-IdsWingetInstalados
+    $total    = @($Apps).Count
+    $n        = 0
 
     foreach ($a in $Apps) {
         $n++
@@ -532,7 +578,16 @@ function Invoke-VarreduraAtualizacoes {
                        -Status "$($a.nome) ($n de $total)" `
                        -PercentComplete ([int](100 * $n / $total))
 
-        $instalada = Find-VersaoInstalada -Inventario $inv -Nome $a.nome
+        # Para app de gerenciador, a resposta do winget vale mais que o nome no
+        # registro: cobre app da Store e nao depende de o nome bater.
+        $instalada = $null
+        if ($a.fonte -eq 'gerenciador' -and $a.winget) {
+            $instalada = Find-VersaoPorIdWinget -IdsInstalados $idsWinget -Id $a.winget
+        }
+        if (-not $instalada) {
+            $instalada = Find-VersaoInstalada -Inventario $inv -Nome $a.nome
+        }
+
         $estado = ''
         $marcar = $true
 
