@@ -20,6 +20,8 @@ param(
     [switch]$Listar,
     [switch]$VerificarIds,
     [switch]$Limpar,
+    [switch]$Drivers,
+    [switch]$SomenteDrivers,
     [string]$Catalogo
 )
 
@@ -348,6 +350,99 @@ if ($Limpar) {
     }
     Write-Host ("log       : {0}" -f $LogFile)
     Write-Log "Limpeza - removidos=$okR falhas=$($falhasR.Count)"
+    return
+}
+
+
+# ================================================= drivers pelo Windows Update
+function Test-Administrador {
+    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$id).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Install-DriversWindowsUpdate {
+    <#
+      Usa a API do Windows Update Agent, filtrando so drivers. Nada de pacote
+      de terceiro: os drivers vem assinados e homologados pela Microsoft
+      (WHQL), enviados pelos proprios fabricantes. Exige elevacao - sem ela a
+      chamada falha com HRESULT 0x80240044.
+    #>
+    if (-not (Test-Administrador)) {
+        throw 'a instalacao de drivers exige PowerShell como administrador'
+    }
+
+    Write-Log 'procurando drivers aplicaveis a esta maquina...'
+
+    $sessao   = New-Object -ComObject Microsoft.Update.Session
+    $buscador = $sessao.CreateUpdateSearcher()
+    $buscador.ServerSelection = 1        # ssWindowsUpdate, nao WSUS da empresa
+    $achado   = $buscador.Search("IsInstalled=0 and Type='Driver' and IsHidden=0")
+
+    if ($achado.Updates.Count -eq 0) {
+        Write-Log 'nenhum driver pendente; o sistema ja esta com os drivers que a Microsoft oferece'
+        return
+    }
+
+    Write-Host ''
+    Write-Host ("Drivers encontrados ({0}):" -f $achado.Updates.Count) -ForegroundColor Cyan
+    $colecao = New-Object -ComObject Microsoft.Update.UpdateColl
+    foreach ($u in $achado.Updates) {
+        Write-Host ("  - {0}" -f $u.Title)
+        if (-not $u.EulaAccepted) { try { $u.AcceptEula() } catch { } }
+        [void]$colecao.Add($u)
+    }
+
+    Write-Host ''
+    Write-Log 'baixando...'
+    $baixador = $sessao.CreateUpdateDownloader()
+    $baixador.Updates = $colecao
+    [void]$baixador.Download()
+
+    $prontos = New-Object -ComObject Microsoft.Update.UpdateColl
+    foreach ($u in $achado.Updates) { if ($u.IsDownloaded) { [void]$prontos.Add($u) } }
+
+    if ($prontos.Count -eq 0) {
+        Write-Log 'nenhum driver pode ser baixado' ERRO
+        return
+    }
+
+    Write-Log ("instalando {0} driver(es)..." -f $prontos.Count)
+    $instalador = $sessao.CreateUpdateInstaller()
+    $instalador.Updates = $prontos
+    $r = $instalador.Install()
+
+    # 2 = concluido, 3 = concluido com erros, 4 = falhou, 5 = cancelado
+    switch ($r.ResultCode) {
+        2 { Write-Log ("drivers instalados: {0}" -f $prontos.Count) }
+        3 { Write-Log 'drivers instalados, com erros em alguns itens' AVISO }
+        default { Write-Log ("a instalacao de drivers terminou com codigo {0}" -f $r.ResultCode) ERRO }
+    }
+    if ($r.RebootRequired) {
+        Write-Log 'e preciso reiniciar o computador para concluir' AVISO
+    }
+}
+
+if ($SomenteDrivers) {
+    try { Install-DriversWindowsUpdate }
+    catch { Write-Log "drivers: FALHOU - $($_.Exception.Message)" ERRO }
+    Write-Host ''
+    Write-Host 'Pressione Enter para fechar.'
+    [void](Read-Host)
+    return
+}
+
+if ($Drivers) {
+    if (Test-Administrador) {
+        try { Install-DriversWindowsUpdate }
+        catch { Write-Log "drivers: FALHOU - $($_.Exception.Message)" ERRO }
+    }
+    else {
+        Write-Log 'abrindo uma janela elevada so para os drivers (o UAC vai perguntar)'
+        $caminho = $MyInvocation.MyCommand.Path
+        Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$caminho`"", '-SomenteDrivers')
+    }
     return
 }
 
@@ -739,6 +834,23 @@ function Show-JanelaSelecao {
         $y += 10
     }
 
+    # Extra: drivers. Comeca desmarcado - exige elevacao e mexe no sistema.
+    $tituloExtra          = New-Object Windows.Forms.Label
+    $tituloExtra.Text     = 'Extras'
+    $tituloExtra.Font     = New-Object Drawing.Font($form.Font, [Drawing.FontStyle]::Bold)
+    $tituloExtra.AutoSize = $true
+    $tituloExtra.Location = New-Object Drawing.Point(4, $y)
+    $painel.Controls.Add($tituloExtra)
+    $y += 26
+
+    $script:cbDrivers          = New-Object Windows.Forms.CheckBox
+    $script:cbDrivers.Text     = 'Instalar / atualizar drivers tambem (Windows Update, pede administrador)'
+    $script:cbDrivers.AutoSize = $true
+    $script:cbDrivers.Checked  = $false
+    $script:cbDrivers.Location = New-Object Drawing.Point(20, $y)
+    $painel.Controls.Add($script:cbDrivers)
+    $y += 28
+
     function New-Botao($texto, $largura) {
         $b        = New-Object Windows.Forms.Button
         $b.Text   = $texto
@@ -765,7 +877,8 @@ function Show-JanelaSelecao {
 
     [void]$form.ShowDialog()
 
-    if (-not $script:confirmado) { return @() }
+    if (-not $script:confirmado) { $script:marcarDrivers = $false; return @() }
+    $script:marcarDrivers = [bool]$script:cbDrivers.Checked
     return @($script:caixas | Where-Object { $_.Checked } | ForEach-Object { $_.Tag })
 }
 
@@ -779,12 +892,18 @@ elseif ($Tudo) {
     $selecionados = @($TodosApps)
 }
 else {
+    $script:marcarDrivers = $false
     Write-Host 'Verificando versoes disponiveis e o que ja esta instalado...'
     Invoke-VarreduraAtualizacoes -Apps $TodosApps
     $selecionados = @(Show-JanelaSelecao -Grupos $cat.grupos)
 }
 
-if (-not $selecionados -or $selecionados.Count -eq 0) {
+$querDrivers = $false
+if (Get-Variable -Name 'marcarDrivers' -Scope Script -ErrorAction SilentlyContinue) {
+    $querDrivers = [bool]$script:marcarDrivers
+}
+
+if ((-not $selecionados -or $selecionados.Count -eq 0) -and -not $querDrivers) {
     Write-Host 'Nada selecionado. Nenhuma alteracao feita.'
     return
 }
@@ -850,5 +969,20 @@ if ($falhou.Count) {
 }
 Write-Host ("log        : {0}" -f $LogFile)
 Write-Log "Fim - ok=$($ok.Count) falhas=$($falhou.Count) pulados=$($pulou.Count)"
+
+if ($querDrivers) {
+    Write-Host ''
+    Write-Host '================ drivers ================'
+    if (Test-Administrador) {
+        try { Install-DriversWindowsUpdate }
+        catch { Write-Log "drivers: FALHOU - $($_.Exception.Message)" ERRO }
+    }
+    else {
+        Write-Log 'abrindo uma janela elevada so para os drivers (o UAC vai perguntar)'
+        $caminho = $MyInvocation.MyCommand.Path
+        Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$caminho`"", '-SomenteDrivers')
+    }
+}
 
 if ($falhou.Count) { exit 1 }

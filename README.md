@@ -61,6 +61,28 @@ So alguns, pelo id do catalogo:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Apenas wordcraft,gridcraft,vscode
 
+### Drivers
+
+Na tela principal, no fim da lista, ha uma caixa **"Instalar / atualizar
+drivers tambem"**, desmarcada por padrao. Marcada, depois de instalar os apps o
+script consulta o Windows Update filtrando apenas drivers
+(`IsInstalled=0 and Type='Driver'`), lista o que encontrou, baixa e instala.
+
+Nao usa pacote de driver de terceiro: os drivers vem assinados e homologados
+pela Microsoft (WHQL), enviados pelos proprios fabricantes. Isso exige
+elevacao, entao o script abre uma janela com UAC so para essa parte — o resto
+continua rodando no seu perfil, sem administrador.
+
+Tambem da para rodar so os drivers, sem instalar app nenhum:
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Drivers
+
+Duas ressalvas: o Windows Update costuma trazer drivers mais antigos que os do
+fabricante, porque passam por homologacao — otimo para rede, chipset, audio e
+leitor de cartao, pior para placa de video, onde o site da NVIDIA ou AMD e
+melhor. E instalacao automatica de driver pode regredir uma maquina que ja
+funciona bem; em maquina recem-formatada o ganho e quase so.
+
 Remover os programas indesejados que vem junto com o Windows:
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Restaurar-Stack.ps1 -Limpar
