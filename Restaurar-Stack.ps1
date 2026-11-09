@@ -542,6 +542,27 @@ function Get-CausaDoLogMsi {
     return @($uteis | Select-Object -Last 6)
 }
 
+function Test-InstaladoParaTodos {
+    <#
+      Verdadeiro quando ja existe uma copia instalada para todos os usuarios
+      (chave em HKLM). Nesse caso o MSI precisa de ALLUSERS=1: o Windows
+      Installer recusa trocar o escopo da instalacao e devolve 1603.
+    #>
+    param([string]$Nome)
+    $caminhos = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    foreach ($c in $caminhos) {
+        try {
+            $achou = Get-ItemProperty -Path $c -ErrorAction SilentlyContinue |
+                     Where-Object { $_.PSObject.Properties.Name -contains 'DisplayName' -and $_.DisplayName -like "$Nome*" }
+            if ($achou) { return $true }
+        } catch { }
+    }
+    return $false
+}
+
 function Install-AppArtCraft {
     param([Parameter(Mandatory)]$App)
 
@@ -566,16 +587,32 @@ function Install-AppArtCraft {
     $logMsi = Join-Path $MsiLogDir ('{0}.log' -f [IO.Path]::GetFileNameWithoutExtension($asset.Nome))
     $argsBase = @('/i', "`"$destino`"", '/norestart', '/l*v', "`"$logMsi`"")
 
+    # Se ja existe copia para todos os usuarios, a atualizacao tem de manter
+    # esse escopo (ALLUSERS=1) e isso exige elevacao.
+    $paraTodos = Test-InstaladoParaTodos -Nome $App.nome
+    if ($paraTodos) {
+        Write-Log "$($App.nome): ja instalado para todos os usuarios; mantendo esse escopo"
+    }
+
     $maxTentativas = 12
     $tentativa     = 0
     $p             = $null
-    $modo          = '/qn'
 
     while ($tentativa -lt $maxTentativas) {
         $tentativa++
-        $p = Start-Process -FilePath 'msiexec.exe' `
-                           -ArgumentList ($argsBase + @($modo)) `
-                           -Wait -PassThru
+
+        # $args e variavel automatica do PowerShell; usar nome proprio.
+        $argsMsi = @($argsBase)
+        if ($paraTodos) { $argsMsi += 'ALLUSERS=1' }
+        $argsMsi += '/qn'       # sempre silencioso: nada de janela travando a leva
+
+        if ($paraTodos -and -not (Test-Administrador)) {
+            # Instalacao para todos os usuarios exige elevacao; o UAC pergunta.
+            $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList $argsMsi -Verb RunAs -Wait -PassThru
+        }
+        else {
+            $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList $argsMsi -Wait -PassThru
+        }
 
         if ($p.ExitCode -eq 1618) {
             if ($tentativa -lt $maxTentativas) {
@@ -585,11 +622,11 @@ function Install-AppArtCraft {
             continue
         }
 
-        # 1603 totalmente silencioso pode ser so falta de interface para um
-        # prompt que o pacote precisa mostrar. Vale uma tentativa com /qb.
-        if ($p.ExitCode -eq 1603 -and $modo -eq '/qn') {
-            Write-Log "$($App.nome): codigo 1603 em modo silencioso; repetindo com interface basica" 'AVISO'
-            $modo = '/qb'
+        # 1603 sem ALLUSERS costuma ser exatamente este caso: existe copia
+        # para todos os usuarios que a deteccao por nome nao pegou.
+        if ($p.ExitCode -eq 1603 -and -not $paraTodos) {
+            Write-Log "$($App.nome): 1603; parece haver copia para todos os usuarios, repetindo com ALLUSERS=1" 'AVISO'
+            $paraTodos = $true
             continue
         }
 
