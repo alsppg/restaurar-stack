@@ -43,7 +43,9 @@ $DownloadDir = Join-Path $BaseDir 'downloads'
 $LogFile     = Join-Path $BaseDir 'restaurar-stack.log'
 $MaxLogBytes = 1MB
 
-New-Item -ItemType Directory -Force -Path $BaseDir, $DownloadDir | Out-Null
+$MsiLogDir   = Join-Path $BaseDir 'msi-logs'
+
+New-Item -ItemType Directory -Force -Path $BaseDir, $DownloadDir, $MsiLogDir | Out-Null
 
 function Write-Log {
     param([string]$Mensagem, [ValidateSet('INFO','AVISO','ERRO')][string]$Nivel = 'INFO')
@@ -516,6 +518,30 @@ function Resolve-AssetArtCraft {
     return $alvo
 }
 
+function Get-CausaDoLogMsi {
+    <#
+      O codigo 1603 e generico. A causa fica no log verboso: a acao que
+      retornou 3 e a linha de "Error status". Devolve as linhas uteis.
+    #>
+    param([string]$Caminho)
+    if (-not (Test-Path -LiteralPath $Caminho)) { return @() }
+    try {
+        $linhas = Get-Content -LiteralPath $Caminho -Tail 4000 -ErrorAction Stop
+    } catch { return @() }
+
+    $uteis = $linhas | Where-Object {
+        $_ -match 'Error status:' -or
+        $_ -match 'Product: .*Error' -or
+        $_ -match 'Installation failed' -or
+        $_ -match 'returned actual error' -or
+        $_ -match 'MainEngineThread is returning' -or
+        $_ -match 'Error 1[0-9]{3}\.' -or
+        $_ -match 'cannot install.*higher version' -or
+        $_ -match 'Another version of this product is already installed'
+    }
+    return @($uteis | Select-Object -Last 6)
+}
+
 function Install-AppArtCraft {
     param([Parameter(Mandatory)]$App)
 
@@ -537,20 +563,37 @@ function Install-AppArtCraft {
     # 1618 = ERROR_INSTALL_ALREADY_RUNNING: o Windows Installer aceita uma
     # instalacao por vez e o MSI anterior ainda nao soltou o lock. Nao e erro
     # definitivo: espera e repete.
+    $logMsi = Join-Path $MsiLogDir ('{0}.log' -f [IO.Path]::GetFileNameWithoutExtension($asset.Nome))
+    $argsBase = @('/i', "`"$destino`"", '/norestart', '/l*v', "`"$logMsi`"")
+
     $maxTentativas = 12
     $tentativa     = 0
     $p             = $null
+    $modo          = '/qn'
 
     while ($tentativa -lt $maxTentativas) {
         $tentativa++
         $p = Start-Process -FilePath 'msiexec.exe' `
-                           -ArgumentList @('/i', "`"$destino`"", '/qn', '/norestart') `
+                           -ArgumentList ($argsBase + @($modo)) `
                            -Wait -PassThru
-        if ($p.ExitCode -ne 1618) { break }
-        if ($tentativa -lt $maxTentativas) {
-            Write-Log ("{0}: Windows Installer ocupado; nova tentativa em 15s ({1}/{2})" -f $App.nome, $tentativa, $maxTentativas) 'AVISO'
-            Start-Sleep -Seconds 15
+
+        if ($p.ExitCode -eq 1618) {
+            if ($tentativa -lt $maxTentativas) {
+                Write-Log ("{0}: Windows Installer ocupado; nova tentativa em 15s ({1}/{2})" -f $App.nome, $tentativa, $maxTentativas) 'AVISO'
+                Start-Sleep -Seconds 15
+            }
+            continue
         }
+
+        # 1603 totalmente silencioso pode ser so falta de interface para um
+        # prompt que o pacote precisa mostrar. Vale uma tentativa com /qb.
+        if ($p.ExitCode -eq 1603 -and $modo -eq '/qn') {
+            Write-Log "$($App.nome): codigo 1603 em modo silencioso; repetindo com interface basica" 'AVISO'
+            $modo = '/qb'
+            continue
+        }
+
+        break
     }
 
     # 3010 = instalado, pede reinicio.
@@ -558,7 +601,11 @@ function Install-AppArtCraft {
         throw "Windows Installer seguiu ocupado apos $maxTentativas tentativas (codigo 1618). Feche outras instalacoes ou o Windows Update e rode de novo."
     }
     if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
-        throw "msiexec terminou com codigo $($p.ExitCode)"
+        $causa = Get-CausaDoLogMsi -Caminho $logMsi
+        foreach ($c in $causa) { Write-Log ("  msi: {0}" -f $c.Trim()) 'AVISO' }
+        $extra = ''
+        if ($causa.Count -eq 0) { $extra = " Log completo em $logMsi" }
+        throw "msiexec terminou com codigo $($p.ExitCode).$extra"
     }
     Remove-Item -LiteralPath $destino -Force -ErrorAction SilentlyContinue
     if ($p.ExitCode -eq 3010) { Write-Log "$($App.nome): instalado (pede reinicio)" 'AVISO' }
