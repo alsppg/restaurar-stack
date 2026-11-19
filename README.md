@@ -26,9 +26,10 @@ comando de novo depois. O Homebrew tambem nao vem de fabrica: o script
 pergunta se quer instalar (script oficial de brew.sh, pede sua senha). Se voce
 recusar, os apps do ArtCraft instalam normalmente e os demais sao pulados.
 
-Como o repositorio e privado, o `git clone` pede autenticacao na primeira vez
-em cada maquina. Tornando o repositorio publico em Settings > Danger Zone >
-Change repository visibility, o comando passa a rodar sem nenhuma interacao.
+O repositorio e publico, entao o `git clone` nao pede autenticacao nenhuma em
+maquina alguma. Se um dia voltar a ser privado, o Git por HTTPS nao aceita
+senha de conta desde 2021: seria preciso um Personal Access Token ou
+`gh auth login` pelo navegador.
 
 ## Windows
 
